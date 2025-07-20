@@ -1,71 +1,52 @@
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay
 
-# Load Titanic dataset
+# Load dataset
 df = sns.load_dataset("titanic")
 
-# Show first 5 rows
-print(df.head())
+# Drop unused columns
+df = df.drop(columns=["deck", "embark_town", "alive", "class", "who"])
 
-#drop colums we dont need
-
-df =df.drop(columns=["deck","embark_town","alive","class","who"])
-
-#drop row with missing values
+# Drop rows with missing values
 df = df.dropna()
 
-# covert sex colum to number
-df["sex"] = df["sex"].map({
-    'male' : 0 ,
-    'female' : 1
-})
+# Convert categorical columns to numeric
+df["sex"] = df["sex"].map({'male': 0, 'female': 1})
+df = pd.get_dummies(df, columns=['embarked'])  # One-hot encode embarked column
 
-#convert embrak to number using one hot encoding
+# Show cleaned data
+print("Cleaned Data:\n", df.head())
 
-df = pd.get_dummies(df,columns=['embarked'])
+# Visual: Survival count
+sns.countplot(x='survived', data=df)
+plt.title("Survival Count")
+plt.show()
 
-#show clean data
-print(df.head())
-print("\ncolums",df.columns)
+# Split features & label
+X = df.drop("survived", axis=1)
+y = df["survived"]
 
-# Step 1: Split features and label
-X = df.drop("survived", axis=1)   # input    
-y = df["survived"]                # output
-# | Code     | Means                                    |
-# | -------- | ---------------------------------------- |
-# | `axis=0` | Do something row-wise (🧍 vertical)      |
-# | `axis=1` | Do something column-wise (➡️ horizontal) |
-
-
-
-# Step 2: Train/test split
+# Train/test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Step 3: Create and train model
+# Train model
 model = DecisionTreeClassifier()
 model.fit(X_train, y_train)
 
-# Step 4: Predict and check accuracy
+# Predict
 y_pred = model.predict(X_test)
+
+# Accuracy
 acc = accuracy_score(y_test, y_pred)
 print("Model Accuracy:", acc)
 
-# # New passenger data
-# new_passenger = [[3, 0, 22, 0, 0, 7.25, True, True, 0, 0, 1]]
-
-# columns = ['pclass', 'sex', 'age', 'sibsp', 'parch', 'fare', 
-#            'adult_male', 'alone', 'embarked_C', 'embarked_Q', 'embarked_S']
-
-# new_passenger_df = pd.DataFrame([new_passenger[0]], columns=columns)
-
-# # Now predict
-# prediction = model.predict(new_passenger_df)
-
-# # Show result
-# if prediction[0] == 1:
-#     print("Passenger would SURVIVE 🛟")
-# else:
-#     print("Passenger would NOT survive ❌")
+# Confusion Matrix
+cm = confusion_matrix(y_test, y_pred)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=model.classes_)
+disp.plot()
+plt.title("Confusion Matrix")
+plt.show()
